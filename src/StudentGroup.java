@@ -1,7 +1,8 @@
-import java.util.Date;
-import java.lang.Exception;
-import java.util.*;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A fix-sized array of students
@@ -17,7 +18,7 @@ public class StudentGroup implements StudentArrayOperation {
 
     private Student[] students;
     private static int noOfStudents = 0;
-public StudentGroup(){}
+    public StudentGroup(){}
     /**
      * DO NOT remove or change this constructor, it will be used during task check
      *
@@ -90,8 +91,11 @@ public StudentGroup(){}
     @Override
     public void add(Student student, int index) {
         // Add your implementation here
-        if (student == null || index < 0 || index >= students.length)
+        if (student == null || index < 0 || index >= students.length || noOfStudents == students.length)
             throw new IllegalArgumentException();
+        for (int i = noOfStudents; i > index; i--) {
+            students[i] = students[i-1];
+        }
         students[index] = student;
         noOfStudents++;
     }
@@ -206,46 +210,41 @@ public StudentGroup(){}
     @Override
     public Student[] getBetweenBirthDates(Date firstDate, Date lastDate) {
         // Add your implementation here
-        Student[] st1=new Student[students.length];
-    int j=0;
- int dy,dm,dd;
-int fy= firstDate.getYear();
- int fm = firstDate.getMonth();
-int fd = firstDate.getDate();
-int ly= lastDate.getYear();
- int lm = lastDate.getMonth();
-int ld = lastDate.getDate();
-
+        Student[] st1 = new Student[students.length];
         if (firstDate == null || lastDate == null)
             throw new IllegalArgumentException();
-        else {
-            for (int i = 0; i < noOfStudents; i++) {
- dy = students[i].getBirthDate().getYear();
-   dm = students[i].getBirthDate().getMonth();
- dd = students[i].getBirthDate().getDate();
-                if (((dy>fy )&& (dy<ly)) ||((dm>fm) && (dm<lm)) && ((dd>dm)&&(dd<ld)))
-                st1[j]=students[i];
-j++;
+        int j = 0;
+        for (int i = 0; i < noOfStudents; i++) {
+            Date dt = students[i].getBirthDate();
+            if (dt.after(firstDate)) {
+                if (dt.equals(lastDate) && dt.before(lastDate)) {
+                    st1[j] = students[i];
+                    j++;
+                }
             }
         }
         return st1;
-
     }
 
     @Override
     public Student[] getNearBirthDate(Date date, int days) {
         // Add your implementation here
         Student[] st2 = new Student[students.length];
-int j=0;
-        if (date.equals(null))
+        if (date == null)
             throw new IllegalArgumentException();
-        else {
-            for (int i = 0; i < noOfStudents; i++) {
-                if(((students[i].getBirthDate()).equals(date)) || ((students[i].getBirthDate()).equals(date.getDay() + days)))
-                    st2[j]=students[i];
-j++;
+        int j = 0;
+        for (int i = 0; i < noOfStudents; i++) {
+            Date dt = students[i].getBirthDate();
+            if (dt.equals(date)) {
+                st2[j] = students[i];
+                j++;
             }
-
+            long diff = Math.abs(dt.getTime() - date.getTime());
+            long diffDays = TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
+            if (days <= diffDays) {
+                st2[j] = students[i];
+                j++;
+            }
         }
         return st2;
     }
@@ -268,7 +267,7 @@ j++;
                 age--;
             else if (dm == cm) {
                 int cd = t.get(Calendar.DAY_OF_MONTH);
-                int dd = students[indexOfStudent].getBirthDate().getDate();
+                int dd = students[indexOfStudent].getBirthDate().getDay();
                 if (dd > cd)
                     age--;
             }
@@ -279,16 +278,14 @@ j++;
     @Override
     public Student[] getStudentsByAge(int age) {
         // Add your implementation here
-        Student[] st=new Student[students.length];
-    int j=0;
-        for (int i = 0; i < students.length; i++) 
-        {
+        Student[] st = new Student[students.length];
+        int j = 0;
+        for (int i = 0; i < noOfStudents; i++) {
             int reqage = getCurrentAgeByDate(i);
-            if (reqage == age){
-                st[j]=students[i];}
-           
-            j++;
-           
+            if (reqage == age) {
+                st[j] = students[i];
+                j++;
+            }
         }
         return st;
     }
@@ -296,48 +293,37 @@ j++;
     @Override
     public Student[] getStudentsWithMaxAvgMark() {
         // Add your implementation here
-        Student[] temp = new Student[students.length];
-        Student[] st = new Student[students.length];
-    int k=0;
-        for (int i = 0; i < temp.length; i++) {
-            int index = i;
-            for (int j = i + 1; j < temp.length; j++) {
-                if (temp[j].compareTo(temp[index]) == 1) {
-                    index = j;
-                }
-            }
-            Student small = temp[index];
-            temp[index] = temp[i];
-            temp[i] = small;
-        }
-        for (int i = 0; i < temp.length; i++) {
-            if ((temp[temp.length - 1]).getAvgMark() == temp[i].getAvgMark())
-                st[k]=temp[i];
-                k++;
-        }
-        return st;
+        List<Student> temp = new ArrayList<>();
 
+        double max = -1.0;
+        for (int i = 0; i < noOfStudents; i++) {
+            if (students[i].getAvgMark() > max) {
+                max = students[i].getAvgMark();
+            }
+        }
+        for (int i = 0; i < noOfStudents; i++) {
+            if (students[i].getAvgMark() == max) {
+                temp.add(students[i]);
+            }
+        }
+
+        Student[] studentsList = new Student[temp.size()];
+        for (int i = 0; i < temp.size(); i++) {
+            studentsList[i] = temp.get(i);
+        }
+        return studentsList;
     }
 
     @Override
     public Student getNextStudent(Student student) {
         // Add your implementation here
-        Student st8=null;
         if (student == null)
             throw new IllegalArgumentException();
-        else 
-        {
-            for (int i = 0; i < students.length; i++)
-            {
-                if (students[i].getId() == student.getId())
-                {
-                    st8 = students[i + 1];
-                    
-                }
+        for (int i = 0; i < students.length; i++) {
+            if (students[i].equals(student)) {
+                return students[i+1];
             }
-return st8;
         }
-        
-
+        return null;
     }
 }
